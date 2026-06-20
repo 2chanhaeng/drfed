@@ -3,6 +3,7 @@
 "aqua:oxc-project/oxc/oxfmt" = "1.70.0"
 "github:nushell/nushell" = "latest"
 node = "26"
+"npm:@typescript/native-preview" = "7.0.0-dev.20260620.1"
 "npm:pglite-cli" = "latest"
 pnpm = "11"
 
@@ -15,6 +16,10 @@ postinstall = ["mise deps", "mise generate git-pre-commit --task check --write"]
 [tasks.check]
 description = "Check all"
 depends = ["check:*"]
+
+[tasks."check:types"]
+description = "Check TypeScript types"
+run = "pnpm --recursive exec tsgo --noEmit"
 
 [tasks."check:fmt"]
 description = "Check formatting"

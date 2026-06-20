@@ -87,6 +87,7 @@ mise run dev
 
 `mise run check` runs all checks currently configured in *mise.toml*:
 
+ -  TypeScript type checking with `tsgo --noEmit`.
  -  TypeScript/JavaScript formatting with `oxfmt --check`.
  -  Markdown formatting with `hongdown --check`.
  -  *mise.toml* formatting with `mise fmt --check`.

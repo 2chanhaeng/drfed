@@ -157,7 +157,7 @@ async function shutdown(
 function waitForExit(child: ChildProcess): Promise<ExitResult> {
   return new Promise((resolve) => {
     child.once("exit", (code, signal) => resolve({ code, signal }));
-    child.once("error", (error) => resolve({ code: 1, error }));
+    child.once("error", (error) => resolve({ code: 1, signal: null, error }));
   });
 }
 
@@ -190,7 +190,7 @@ function killTree(child: ChildProcess, signal: NodeJS.Signals): void {
       if (child.pid != null) process.kill(-child.pid, signal);
     }
   } catch (error) {
-    if (error?.code !== "ESRCH") child.kill(signal);
+    if (!isProcessLookupError(error)) child.kill(signal);
   }
 }
 
@@ -209,8 +209,17 @@ function forceKill(child: ChildProcess | undefined): void {
   try {
     if (child.pid != null) process.kill(-child.pid, "SIGKILL");
   } catch (error) {
-    if (error?.code !== "ESRCH") child.kill("SIGKILL");
+    if (!isProcessLookupError(error)) child.kill("SIGKILL");
   }
+}
+
+function isProcessLookupError(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error != null &&
+    "code" in error &&
+    error.code === "ESRCH"
+  );
 }
 
 function signalExitCode(signal: NodeJS.Signals | null): number | undefined {

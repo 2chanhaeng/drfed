@@ -14,11 +14,8 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { Database } from "@drfed/models";
-import {
-  createYoga,
-  useExecutionCancellation,
-  YogaServerInstance,
-} from "graphql-yoga";
+import { createYoga, useExecutionCancellation } from "graphql-yoga";
+import type { YogaServerInstance } from "graphql-yoga";
 
 import type { ServerContext, UserContext } from "./builder.ts";
 import { schema } from "./schema.ts";

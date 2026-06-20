@@ -52,6 +52,7 @@
     "build": "tsdown"
   },
   "devDependencies": {
+    "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
     "tsdown": "catalog:",
     "typescript": "catalog:"

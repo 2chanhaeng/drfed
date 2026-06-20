@@ -17,7 +17,7 @@ import { relations, schema } from "@drfed/models";
 import { merge, object, or } from "@optique/core/constructs";
 import { message, optionNames } from "@optique/core/message";
 import { map, withDefault } from "@optique/core/modifiers";
-import { InferValue } from "@optique/core/parser";
+import type { InferValue } from "@optique/core/parser";
 import { option } from "@optique/core/primitives";
 import { socketAddress, url } from "@optique/core/valueparser";
 import { path } from "@optique/run/valueparser";
