@@ -13,27 +13,11 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-import type { Database } from "@drfed/models";
-import { createYoga, useExecutionCancellation } from "graphql-yoga";
-import type { YogaServerInstance } from "graphql-yoga";
+import "./account.ts";
+import "./instance.ts";
+import builder from "./builder.ts";
 
-import type { ServerContext, UserContext } from "./builder.ts";
-import { schema } from "./schema.ts";
+builder.queryType({});
+// builder.mutationType({});
 
-/**
- * Creates a Yoga server instance with the provided schema and context.
- * @param db The database instance.
- * @returns A `YogaServerInstance` configured with the schema and context for
- *          handling GraphQL requests.
- */
-export function createYogaServer(
-  db: Database,
-): YogaServerInstance<ServerContext, UserContext> {
-  return createYoga({
-    plugins: [useExecutionCancellation()],
-    schema,
-    async context(ctx) {
-      return { request: ctx.request, db };
-    },
-  });
-}
+export const schema = builder.toSchema();

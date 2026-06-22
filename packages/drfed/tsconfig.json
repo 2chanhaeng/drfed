@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@drfed/graphql": ["../graphql/src/index.ts"],
+      "@drfed/models": ["../models/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

@@ -1,5 +1,11 @@
 packages:
   - packages/*
 
+allowBuilds:
+  esbuild: true
+
 catalog:
+  "@types/node": ^26.0.0
+  drizzle-orm: 1.0.0-beta.22
   tsdown: ^0.22.3
+  typescript: ^6.0.3

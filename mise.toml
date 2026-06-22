@@ -1,6 +1,12 @@
+min_version = "2026.6.10"
+
 [tools]
 "aqua:dahlia/hongdown" = "0.4.3"
+"github:nushell/nushell" = "latest"
 node = "26"
+"npm:@typescript/native-preview" = "7.0.0-dev.20260620.1"
+"npm:pglite-cli" = "latest"
+oxfmt = "0.55.0"
 pnpm = "11"
 
 [deps.pnpm]
@@ -13,6 +19,14 @@ postinstall = ["mise deps", "mise generate git-pre-commit --task check --write"]
 description = "Check all"
 depends = ["check:*"]
 
+[tasks."check:types"]
+description = "Check TypeScript types"
+run = "pnpm --recursive exec tsgo --noEmit"
+
+[tasks."check:fmt"]
+description = "Check formatting"
+run = "oxfmt --check"
+
 [tasks."check:fmt:docs"]
 description = "Check Markdown formatting"
 run = "hongdown --check"
@@ -21,9 +35,14 @@ run = "hongdown --check"
 description = "Check mise.toml formatting"
 run = "mise fmt --check"
 
+[tasks."check:versions"]
+description = "Check that all package versions are in sync"
+run = "node scripts/check-versions.mts"
+
 [tasks.fmt]
 description = "Format files"
 depends = ["fmt:*"]
+run = "oxfmt --write"
 
 [tasks."fmt:docs"]
 description = "Format Markdown documents"
@@ -32,3 +51,35 @@ run = "hongdown --write"
 [tasks."fmt:mise"]
 description = "Format mise.toml"
 run = "mise fmt"
+
+[tasks.build]
+description = "Build the project"
+run = "pnpm run --recursive build"
+
+[tasks.bump]
+description = "Bump all package versions"
+usage = """
+arg "<version>" help="New version number"
+"""
+run = """
+#!/usr/bin/env nu
+node scripts/bump-versions.mts $env.usage_version
+"""
+
+[tasks."generate:migrate"]
+description = "Generate database migration files"
+usage = """
+flag "--name <name>" help="Migration file name"
+flag "--custom" help="Prepare empty migration file for custom SQL"
+"""
+dir = "packages/models"
+run = """
+#!/usr/bin/env nu
+let name = (if "usage_name" in $env { ["--name" $env.usage_name] } else { [] })
+let custom = (if "usage_custom" in $env { ["--custom"] } else { [] })
+pnpm exec drizzle-kit generate ...$name ...$custom
+"""
+
+[tasks.dev]
+description = "Run the development server"
+run = "node scripts/dev.mts"

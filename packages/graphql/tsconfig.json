@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@drfed/models": ["../models/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}
