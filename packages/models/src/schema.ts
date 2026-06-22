@@ -43,6 +43,9 @@ export const accounts = pgTable(
   ],
 );
 
+export type Account = typeof accounts.$inferSelect;
+export type NewAccount = typeof accounts.$inferInsert;
+
 /**
  * The database table to represent instances.
  */
@@ -65,6 +68,9 @@ export const instances = pgTable(
   ],
 );
 
+export type Instance = typeof instances.$inferSelect;
+export type NewInstance = typeof instances.$inferInsert;
+
 /**
  * The association table between instances and its member accounts.
  */
@@ -83,3 +89,6 @@ export const instanceMembers = pgTable(
   },
   (table) => [primaryKey({ columns: [table.instanceId, table.accountId] })],
 );
+
+export type InstanceMember = typeof instanceMembers.$inferSelect;
+export type NewInstanceMember = typeof instanceMembers.$inferInsert;
