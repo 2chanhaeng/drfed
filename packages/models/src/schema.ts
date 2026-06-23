@@ -16,6 +16,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  index,
   pgTable,
   primaryKey,
   timestamp,
@@ -29,17 +30,19 @@ import {
 export const accounts = pgTable(
   "accounts",
   {
+    id: uuid().primaryKey(),
+    email: varchar({ length: 255 }).notNull().unique(),
+    name: varchar({ length: 100 }).notNull(),
     created: timestamp({ withTimezone: true })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
-    email: varchar({ length: 255 }).notNull().unique(),
-    id: uuid().primaryKey(),
   },
   (table) => [
     check(
       "accounts_email_check",
       sql`${table.email} ~ '^[^@]+@[^@]+\\.[^@]+$'`,
     ),
+    check("accounts_name_check", sql`trim(both from ${table.name}) <> ''`),
   ],
 );
 
@@ -52,12 +55,12 @@ export type NewAccount = typeof accounts.$inferInsert;
 export const instances = pgTable(
   "instances",
   {
+    id: uuid().primaryKey(),
+    slug: varchar({ length: 100 }).notNull().unique(),
+    expires: timestamp({ withTimezone: true }).notNull(),
     created: timestamp({ withTimezone: true })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
-    expires: timestamp({ withTimezone: true }).notNull(),
-    id: uuid().primaryKey(),
-    slug: varchar({ length: 100 }).notNull().unique(),
   },
   (table) => [
     check("instances_slug_check", sql`${table.slug} ~ '^[a-z0-9-]{4,100}$'`),
@@ -73,6 +76,8 @@ export type NewInstance = typeof instances.$inferInsert;
 
 /**
  * The association table between instances and its member accounts.
+ * Note that it also contains the just invited members, which are not yet
+ * accepted.  The `accepted` field is `NULL` for those members.
  */
 export const instanceMembers = pgTable(
   "instance_members",
@@ -80,14 +85,23 @@ export const instanceMembers = pgTable(
     accountId: uuid()
       .notNull()
       .references(() => accounts.id),
-    created: timestamp({ withTimezone: true })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
     instanceId: uuid()
       .notNull()
       .references(() => instances.id),
+    accepted: timestamp({ withTimezone: true }),
+    created: timestamp({ withTimezone: true })
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => [primaryKey({ columns: [table.instanceId, table.accountId] })],
+  (table) => [
+    primaryKey({ columns: [table.instanceId, table.accountId] }),
+    index()
+      .on(table.accountId)
+      .where(sql`${table.accepted} IS NOT NULL`),
+    index()
+      .on(table.instanceId)
+      .where(sql`${table.accepted} IS NOT NULL`),
+  ],
 );
 
 export type InstanceMember = typeof instanceMembers.$inferSelect;

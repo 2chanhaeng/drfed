@@ -13,33 +13,65 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { instanceMembers } from "@drfed/models/schema";
+import { and, eq, isNotNull } from "drizzle-orm/sql/expressions";
+
 import builder, { type DrFedObjectRef } from "./builder.ts";
 
 const AccountRef = builder.drizzleNode("accounts", {
+  name: "Account",
   description:
     "Represents an `Account` in the DrFed platform.  " +
     "Note that it differs from the ActivityPub `Actor`s that belong to `Instance`s.",
-  fields: (t) => ({
-    created: t.expose("created", {
-      type: "DateTime",
-      description: "The date/time when the `Account` was created.",
-    }),
-    email: t.expose("email", {
-      type: "Email",
-      description: "The email address of the `Account`.",
-    }),
-    uuid: t.expose("id", {
-      type: "UUID",
-      description: "The UUID of the `Account`.",
-    }),
-  }),
   id: {
     column(account) {
       return account.id;
     },
     description: "The unique identifier of the `Account`.",
   },
-  name: "Account",
+  fields: (t) => ({
+    uuid: t.expose("id", {
+      type: "UUID",
+      description: "The UUID of the `Account`.",
+    }),
+    email: t.expose("email", {
+      type: "Email",
+      description: "The email address of the `Account`.",
+    }),
+    name: t.exposeString("name", {
+      description: "The display name of the `Account`.",
+    }),
+    created: t.expose("created", {
+      type: "DateTime",
+      description: "The date/time when the `Account` was created.",
+    }),
+    // We can simplify the below connection by using `relatedConnection()`
+    // when Drizzle ORM supports additional filters on the junction table
+    // for relations.  See also the below issue:
+    // https://github.com/drizzle-team/drizzle-orm/issues/5343
+    instances: t.drizzleConnection({
+      type: "instances",
+      description: "The `Instance`s that the `Account` belongs to.",
+      totalCount(parent, _args, ctx) {
+        return ctx.db.$count(
+          instanceMembers,
+          and(
+            eq(instanceMembers.accountId, parent.id),
+            isNotNull(instanceMembers.accepted),
+          ),
+        );
+      },
+      resolve(query, parent, _args, ctx) {
+        return ctx.db.query.instances.findMany(
+          query({
+            where: {
+              instanceMembers: { accountId: parent.id },
+            },
+          }),
+        );
+      },
+    }),
+  }),
 });
 
 export const Account: DrFedObjectRef = AccountRef;

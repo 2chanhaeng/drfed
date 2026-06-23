@@ -22,6 +22,18 @@ export const relations = defineRelations(schema, (r) => ({
     instances: r.many.instances({
       from: r.accounts.id.through(r.instanceMembers.accountId),
       to: r.instances.id.through(r.instanceMembers.instanceId),
+      // Drizzle ORM currently does not support many-to-many relationships with
+      // additional filters on the junction table.  So we need to specify
+      // filter `accepted IS NOT NULL` everywhere we query for instances of
+      // an account (sigh).  See also the below issue:
+      // https://github.com/drizzle-team/drizzle-orm/issues/5343
+    }),
+    instanceMembers: r.many.instanceMembers({
+      from: r.accounts.id,
+      to: r.instanceMembers.accountId,
+      where: {
+        accepted: { isNotNull: true },
+      },
     }),
   },
   instanceMembers: {
@@ -38,6 +50,18 @@ export const relations = defineRelations(schema, (r) => ({
     members: r.many.accounts({
       from: r.instances.id.through(r.instanceMembers.instanceId),
       to: r.accounts.id.through(r.instanceMembers.accountId),
+      // Drizzle ORM currently does not support many-to-many relationships with
+      // additional filters on the junction table.  So we need to specify
+      // filter `accepted IS NOT NULL` everywhere we query for members of
+      // an instance (sigh).  See also the below issue:
+      // https://github.com/drizzle-team/drizzle-orm/issues/5343
+    }),
+    instanceMembers: r.many.instanceMembers({
+      from: r.instances.id,
+      to: r.instanceMembers.instanceId,
+      where: {
+        accepted: { isNotNull: true },
+      },
     }),
   },
 }));
