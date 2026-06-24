@@ -14,8 +14,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { instanceMembers } from "@drfed/models/schema";
+import { drizzleConnectionHelpers } from "@pothos/plugin-drizzle";
 import { and, eq, isNotNull } from "drizzle-orm/sql/expressions";
 
+// oxlint-disable-next-line import/no-cycle
+import { Account } from "./account.ts";
 import builder, { type DrFedObjectRef } from "./builder.ts";
 
 const InstanceRef = builder.drizzleNode("instances", {
@@ -41,33 +44,105 @@ const InstanceRef = builder.drizzleNode("instances", {
       type: "DateTime",
       description: "The creation date/time of the `Instance`.",
     }),
-    // We can simplify the below connection by using `relatedConnection()`
-    // when Drizzle ORM supports additional filters on the junction table
-    // for relations.  See also the below issue:
-    // https://github.com/drizzle-team/drizzle-orm/issues/5343
-    members: t.drizzleConnection({
-      type: "accounts",
-      description: "The `Account`s that belong to the `Instance`.",
-      totalCount(parent, _args, ctx) {
-        return ctx.db.$count(
-          instanceMembers,
-          and(
-            eq(instanceMembers.instanceId, parent.id),
-            isNotNull(instanceMembers.accepted),
-          ),
-        );
-      },
-      resolve(query, parent, _args, ctx) {
-        return ctx.db.query.accounts.findMany(
-          query({
-            where: {
-              instanceMembers: { instanceId: parent.id },
-            },
-          }),
-        );
-      },
-    }),
   }),
 });
 
 export const Instance: DrFedObjectRef = InstanceRef;
+
+const instanceMembersConnection = drizzleConnectionHelpers(
+  builder,
+  "instanceMembers",
+  {
+    query: {
+      orderBy: { created: "desc" },
+    },
+    select(nestedSelection) {
+      return {
+        with: {
+          account: nestedSelection(),
+        },
+        where: {
+          accepted: { isNotNull: true },
+        },
+      };
+    },
+    resolveNode(instanceMember) {
+      return instanceMember.account;
+    },
+  },
+);
+
+// oxlint-disable-next-line max-lines-per-function
+builder.drizzleObjectField(InstanceRef, "members", (t) =>
+  t.connection(
+    {
+      type: Account,
+      description: "The `Account`s that belong to the `Instance`.",
+      select(args, ctx, nestedSelection) {
+        return {
+          with: {
+            instanceMembers: instanceMembersConnection.getQuery(
+              args,
+              ctx,
+              nestedSelection,
+            ),
+          },
+        };
+      },
+      resolve(instance, args, ctx) {
+        return {
+          ...instanceMembersConnection.resolve(
+            instance.instanceMembers,
+            args,
+            ctx,
+            instance,
+          ),
+          totalCount() {
+            return ctx.db.$count(
+              instanceMembers,
+              and(
+                eq(instanceMembers.instanceId, instance.id),
+                isNotNull(instanceMembers.accepted),
+              ),
+            );
+          },
+        };
+      },
+    },
+    {
+      fields(fb) {
+        return {
+          totalCount: fb.int({
+            description:
+              "The total number of `Account`s that belong to the `Instance`." +
+              "Note that pending members are not counted.",
+            resolve(connection) {
+              return connection.totalCount();
+            },
+          }),
+        };
+      },
+    },
+    {
+      fields(fb) {
+        return {
+          created: fb.expose("created", {
+            type: "DateTime",
+            description:
+              "The date/time when the `Account` was added to the `Instance`.",
+          }),
+          accepted: fb.expose("accepted", {
+            type: "DateTime",
+            nullable: true,
+            description:
+              "The date/time when the `Account` accepted membership in the `Instance`.",
+          }),
+          admin: fb.exposeBoolean("admin", {
+            description:
+              "Whether the `Account` has administrator privileges in the `Instance`.",
+          }),
+        };
+      },
+    },
+  ),
+);

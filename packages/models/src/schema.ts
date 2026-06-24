@@ -15,6 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   index,
   pgTable,
@@ -33,6 +34,7 @@ export const accounts = pgTable(
     id: uuid().primaryKey(),
     email: varchar({ length: 255 }).notNull().unique(),
     name: varchar({ length: 100 }).notNull(),
+    admin: boolean().notNull().default(false),
     created: timestamp({ withTimezone: true })
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
@@ -88,6 +90,7 @@ export const instanceMembers = pgTable(
     instanceId: uuid()
       .notNull()
       .references(() => instances.id),
+    admin: boolean().notNull().default(false),
     accepted: timestamp({ withTimezone: true }),
     created: timestamp({ withTimezone: true })
       .notNull()

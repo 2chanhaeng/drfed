@@ -47,6 +47,9 @@ const accountInstancesQuery = `
       instances {
         totalCount
         edges {
+          created
+          accepted
+          admin
           node {
             uuid
             slug
@@ -74,6 +77,9 @@ const accountInstancesResponse = {
         totalCount: 1,
         edges: [
           {
+            created: "2026-06-24T00:00:00.000Z",
+            accepted: "2026-06-24T00:00:00.000Z",
+            admin: true,
             node: {
               uuid: acceptedInstanceId,
               slug: "test-instance",
@@ -160,24 +166,28 @@ async function seedMembershipGraph(db: Database): Promise<void> {
     {
       accountId,
       instanceId: acceptedInstanceId,
+      admin: true,
       accepted,
       created,
     },
     {
       accountId: memberId,
       instanceId: acceptedInstanceId,
+      admin: false,
       accepted,
       created,
     },
     {
       accountId: pendingMemberId,
       instanceId: acceptedInstanceId,
+      admin: false,
       accepted: null,
       created,
     },
     {
       accountId,
       instanceId: pendingInstanceId,
+      admin: false,
       accepted: null,
       created,
     },

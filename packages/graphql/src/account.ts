@@ -14,9 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { instanceMembers } from "@drfed/models/schema";
+import { drizzleConnectionHelpers } from "@pothos/plugin-drizzle";
 import { and, eq, isNotNull } from "drizzle-orm/sql/expressions";
 
 import builder, { type DrFedObjectRef } from "./builder.ts";
+// oxlint-disable-next-line import/no-cycle
+import { Instance } from "./instance.ts";
 
 const AccountRef = builder.drizzleNode("accounts", {
   name: "Account",
@@ -41,40 +44,115 @@ const AccountRef = builder.drizzleNode("accounts", {
     name: t.exposeString("name", {
       description: "The display name of the `Account`.",
     }),
+    admin: t.exposeBoolean("admin", {
+      description: "Whether the `Account` has administrator privileges.",
+    }),
     created: t.expose("created", {
       type: "DateTime",
       description: "The date/time when the `Account` was created.",
-    }),
-    // We can simplify the below connection by using `relatedConnection()`
-    // when Drizzle ORM supports additional filters on the junction table
-    // for relations.  See also the below issue:
-    // https://github.com/drizzle-team/drizzle-orm/issues/5343
-    instances: t.drizzleConnection({
-      type: "instances",
-      description: "The `Instance`s that the `Account` belongs to.",
-      totalCount(parent, _args, ctx) {
-        return ctx.db.$count(
-          instanceMembers,
-          and(
-            eq(instanceMembers.accountId, parent.id),
-            isNotNull(instanceMembers.accepted),
-          ),
-        );
-      },
-      resolve(query, parent, _args, ctx) {
-        return ctx.db.query.instances.findMany(
-          query({
-            where: {
-              instanceMembers: { accountId: parent.id },
-            },
-          }),
-        );
-      },
     }),
   }),
 });
 
 export const Account: DrFedObjectRef = AccountRef;
+
+const accountInstancesConnection = drizzleConnectionHelpers(
+  builder,
+  "instanceMembers",
+  {
+    query: {
+      orderBy: { created: "desc" },
+    },
+    select(nestedSelection) {
+      return {
+        with: {
+          instance: nestedSelection(),
+        },
+        where: {
+          accepted: { isNotNull: true },
+        },
+      };
+    },
+    resolveNode(instanceMember) {
+      return instanceMember.instance!;
+    },
+  },
+);
+
+// oxlint-disable-next-line max-lines-per-function
+builder.drizzleObjectField(AccountRef, "instances", (t) =>
+  t.connection(
+    {
+      type: Instance,
+      description: "The `Instance`s that the `Account` belongs to.",
+      select(args, ctx, nestedSelection) {
+        return {
+          with: {
+            instanceMembers: accountInstancesConnection.getQuery(
+              args,
+              ctx,
+              nestedSelection,
+            ),
+          },
+        };
+      },
+      resolve(account, args, ctx) {
+        return {
+          ...accountInstancesConnection.resolve(
+            account.instanceMembers,
+            args,
+            ctx,
+            account,
+          ),
+          totalCount() {
+            return ctx.db.$count(
+              instanceMembers,
+              and(
+                eq(instanceMembers.accountId, account.id),
+                isNotNull(instanceMembers.accepted),
+              ),
+            );
+          },
+        };
+      },
+    },
+    {
+      fields(fb) {
+        return {
+          totalCount: fb.int({
+            description:
+              "The total number of `Instance`s that the `Account` belongs to." +
+              "Note that pending memberships are not counted.",
+            resolve(connection) {
+              return connection.totalCount();
+            },
+          }),
+        };
+      },
+    },
+    {
+      fields(fb) {
+        return {
+          created: fb.expose("created", {
+            type: "DateTime",
+            description:
+              "The date/time when the `Account` was added to the `Instance`.",
+          }),
+          accepted: fb.expose("accepted", {
+            type: "DateTime",
+            nullable: true,
+            description:
+              "The date/time when the `Account` accepted membership in the `Instance`.",
+          }),
+          admin: fb.exposeBoolean("admin", {
+            description:
+              "Whether the `Account` has administrator privileges in the `Instance`.",
+          }),
+        };
+      },
+    },
+  ),
+);
 
 builder.queryFields((t) => ({
   accountByUuid: t.drizzleField({

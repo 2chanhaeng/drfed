@@ -39,6 +39,9 @@ const instanceMembersQuery = `
             members {
               totalCount
               edges {
+                created
+                accepted
+                admin
                 node {
                   uuid
                   email
@@ -64,6 +67,9 @@ const instanceMembersResponse = {
                 totalCount: 2,
                 edges: [
                   {
+                    created: "2026-06-24T00:00:00.000Z",
+                    accepted: "2026-06-24T00:00:00.000Z",
+                    admin: true,
                     node: {
                       uuid: accountId,
                       email: "owner@example.com",
@@ -71,6 +77,9 @@ const instanceMembersResponse = {
                     },
                   },
                   {
+                    created: "2026-06-24T00:00:00.000Z",
+                    accepted: "2026-06-24T00:00:00.000Z",
+                    admin: false,
                     node: {
                       uuid: memberId,
                       email: "member@example.com",
@@ -103,24 +112,28 @@ describe("Instance.members", () => {
   });
 });
 
+// oxlint-disable-next-line max-lines-per-function
 async function seedInstanceMembers(db: Database): Promise<void> {
   await db.insert(schema.accounts).values([
     {
       id: accountId,
       email: "owner@example.com",
       name: "Owner",
+      admin: false,
       created,
     },
     {
       id: memberId,
       email: "member@example.com",
       name: "Member",
+      admin: false,
       created,
     },
     {
       id: pendingMemberId,
       email: "pending@example.com",
       name: "Pending",
+      admin: false,
       created,
     },
   ]);
@@ -134,18 +147,21 @@ async function seedInstanceMembers(db: Database): Promise<void> {
     {
       accountId,
       instanceId,
+      admin: true,
       accepted,
       created,
     },
     {
       accountId: memberId,
       instanceId,
+      admin: false,
       accepted,
       created,
     },
     {
       accountId: pendingMemberId,
       instanceId,
+      admin: false,
       accepted: null,
       created,
     },
