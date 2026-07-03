@@ -9,6 +9,21 @@ catalogs:
     '@electric-sql/pglite':
       specifier: ^0.5.3
       version: 0.5.3
+    '@logtape/drizzle-orm':
+      specifier: ^2.2.2
+      version: 2.2.2
+    '@logtape/graphql-yoga':
+      specifier: 2.3.0-dev.840
+      version: 2.3.0-dev.840
+    '@logtape/logtape':
+      specifier: 2.3.0-dev.840
+      version: 2.3.0-dev.840
+    '@logtape/testing-node':
+      specifier: 2.3.0-dev.840
+      version: 2.3.0-dev.840
+    '@optique/logtape':
+      specifier: ^1.1.1
+      version: 1.1.1
     '@types/node':
       specifier: ^26.0.0
       version: 26.0.0
@@ -41,9 +56,18 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.3
+      '@logtape/drizzle-orm':
+        specifier: 'catalog:'
+        version: 2.2.2(@logtape/logtape@2.3.0-dev.840)
+      '@logtape/logtape':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840
       '@optique/core':
         specifier: ^1.1.0
         version: 1.1.0
+      '@optique/logtape':
+        specifier: 'catalog:'
+        version: 1.1.1(@logtape/logtape@2.3.0-dev.840)
       '@optique/run':
         specifier: ^1.1.0
         version: 1.1.0
@@ -57,6 +81,9 @@ importers:
         specifier: ^0.11.16
         version: 0.11.16
     devDependencies:
+      '@logtape/testing-node':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)
       '@types/node':
         specifier: 'catalog:'
         version: 26.0.0
@@ -75,6 +102,12 @@ importers:
       '@drfed/models':
         specifier: workspace:*
         version: link:../models
+      '@logtape/graphql-yoga':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)(graphql-yoga@5.21.2(graphql@16.14.2))(graphql@16.14.2)
+      '@logtape/logtape':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840
       '@pothos/core':
         specifier: ^4.13.0
         version: 4.13.0(graphql@16.14.2)
@@ -100,6 +133,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.3
+      '@logtape/testing-node':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)
       '@types/node':
         specifier: 'catalog:'
         version: 26.0.0
@@ -115,6 +151,9 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.3
+      '@logtape/logtape':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840
       drizzle-orm:
         specifier: 'catalog:'
         version: 1.0.0-beta.22(@electric-sql/pglite@0.5.3)(@types/pg@8.20.0)(pg@8.21.0)
@@ -122,6 +161,9 @@ importers:
         specifier: 'catalog:'
         version: 8.21.0
     devDependencies:
+      '@logtape/testing-node':
+        specifier: 'catalog:'
+        version: 2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)
       '@types/node':
         specifier: 'catalog:'
         version: 26.0.0
@@ -411,6 +453,31 @@ packages:
     resolution: {integrity: sha512-hloP58zRVCRSpgDxmqCWJNlizAlUgJFqG2ypq79DCvyv9tHjRYMDOcPFjzfl/A1/YxDvRCZz8wvZvmapQnKwFQ==}
     engines: {node: '>=12'}
 
+  '@logtape/drizzle-orm@2.2.2':
+    resolution: {integrity: sha512-Z/TrI5BbOCSJPmoyogy9RERtAxs/hlyI+e/uay1PSY68/ZddPqfudbS6MGgFylAiACprJ0d0zEiGeysUQUcQ2A==}
+    peerDependencies:
+      '@logtape/logtape': ^2.2.2
+
+  '@logtape/graphql-yoga@2.3.0-dev.840':
+    resolution: {integrity: sha512-zL+RIlG5TPwC8iAWeW8Lh49rA6VUw9fYSFcXLvWIrTJ56xQPX0TzFQ6MMzAMMjw4GlSz8cs0HsHlI/rsHUT02w==}
+    peerDependencies:
+      '@logtape/logtape': ^2.3.0-dev.840+34e837bf
+      graphql: ^15.2.0 || ^16.0.0
+      graphql-yoga: ^5.0.0
+
+  '@logtape/logtape@2.3.0-dev.840':
+    resolution: {integrity: sha512-ozdG01RAKtEbDO9iDZDQOyUX9/4p1AcuHaxJtarDK22ngFU7vSxXyPGn9bf89pX358v2QXY+3+CqXWMlT6tiaQ==}
+
+  '@logtape/testing-node@2.3.0-dev.840':
+    resolution: {integrity: sha512-85UWXs1LCVKbL6nrcR7tPeh5/stQYwrBCkEOuUOJ0ufkTG7l6TP+eNWlCr0P0hrG4NzjjP9GhOpIamrLXbvMtg==}
+    peerDependencies:
+      '@logtape/logtape': ^2.3.0-dev.840+34e837bf
+
+  '@logtape/testing@2.3.0-dev.840':
+    resolution: {integrity: sha512-Hw75jN/90zwf1ooawhs1pVBhz1C/zhEASqFznClmlFk30Tlog/rYwc+yra6vdsB6buHb0jHmIe1NHoX2vV+PDw==}
+    peerDependencies:
+      '@logtape/logtape': ^2.3.0-dev.840+34e837bf
+
   '@napi-rs/wasm-runtime@1.1.5':
     resolution: {integrity: sha512-AWPoBRJ9tsnVhor4sjO7rkni+7p+2IAEFj6cx06UgP10jkQHqay/36uRV/bFkgrh18D9vb4cr8Q0Pthskgzy+Q==}
     peerDependencies:
@@ -420,6 +487,20 @@ packages:
   '@optique/core@1.1.0':
     resolution: {integrity: sha512-eBqai76tHiFDoShlTNXN9AAPs9XznCJRrk4qmGhjZUSMmePCF9o1XU3okUHxHdDXXCHj4auKoIvCN79KNKErxA==}
     engines: {bun: '>=1.2.0', deno: '>=2.3.0', node: '>=20.0.0'}
+
+  '@optique/core@1.1.1':
+    resolution: {integrity: sha512-tbZLdH5wEnh8IRG8KTmWPZCKHLmD4bXigoPdzoSUVi+V46qZTNEaTdqtR7EuEwhbPI0KQjLSYRZCxFTdr9OZkA==}
+    engines: {bun: '>=1.2.0', deno: '>=2.3.0', node: '>=20.0.0'}
+
+  '@optique/logtape@1.1.1':
+    resolution: {integrity: sha512-vpmMK0Y7dvrhQEXIGr+Pix+UXlJi4fp+NIX6s7xmpIjYfmms+lGw3dHPJhjJFoTthKJQCeBF88tjWAqwCJhVLg==}
+    engines: {bun: '>=1.2.0', deno: '>=2.3.0', node: '>=20.0.0'}
+    peerDependencies:
+      '@logtape/file': ^2.0.4
+      '@logtape/logtape': ^2.0.4
+    peerDependenciesMeta:
+      '@logtape/file':
+        optional: true
 
   '@optique/run@1.1.0':
     resolution: {integrity: sha512-dcuqqqU1Cpm9CLGEkCkpT/cpJ6H6a+hs0rP+iD8Tgwb+CPPZtX/hCfdIrqYyZ2RtYLxgc3S6KqC81AZAwEUPew==}
@@ -1199,6 +1280,27 @@ snapshots:
     dependencies:
       jsbi: 4.3.2
 
+  '@logtape/drizzle-orm@2.2.2(@logtape/logtape@2.3.0-dev.840)':
+    dependencies:
+      '@logtape/logtape': 2.3.0-dev.840
+
+  '@logtape/graphql-yoga@2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)(graphql-yoga@5.21.2(graphql@16.14.2))(graphql@16.14.2)':
+    dependencies:
+      '@logtape/logtape': 2.3.0-dev.840
+      graphql: 16.14.2
+      graphql-yoga: 5.21.2(graphql@16.14.2)
+
+  '@logtape/logtape@2.3.0-dev.840': {}
+
+  '@logtape/testing-node@2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)':
+    dependencies:
+      '@logtape/logtape': 2.3.0-dev.840
+      '@logtape/testing': 2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)
+
+  '@logtape/testing@2.3.0-dev.840(@logtape/logtape@2.3.0-dev.840)':
+    dependencies:
+      '@logtape/logtape': 2.3.0-dev.840
+
   '@napi-rs/wasm-runtime@1.1.5(@emnapi/core@1.11.0)(@emnapi/runtime@1.11.0)':
     dependencies:
       '@emnapi/core': 1.11.0
@@ -1207,6 +1309,13 @@ snapshots:
     optional: true
 
   '@optique/core@1.1.0': {}
+
+  '@optique/core@1.1.1': {}
+
+  '@optique/logtape@1.1.1(@logtape/logtape@2.3.0-dev.840)':
+    dependencies:
+      '@logtape/logtape': 2.3.0-dev.840
+      '@optique/core': 1.1.1
 
   '@optique/run@1.1.0':
     dependencies:

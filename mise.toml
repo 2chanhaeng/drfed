@@ -65,7 +65,20 @@ run = "pnpm run --parallel --recursive build"
 [tasks.test]
 description = "Run tests"
 depends = ["build"]
-run = "pnpm run --parallel --recursive test"
+usage = '''
+flag "-d --debug" help="Run tests in debug mode"
+'''
+run = '''
+#!/usr/bin/env nu
+if "usage_debug" in $env {
+  $env.LOGTAPE_TEST_MODE = "always"
+  $env.LOGTAPE_TEST_LOWEST_LEVEL = "trace"
+} else {
+  $env.LOGTAPE_TEST_MODE = "on-failure"
+  $env.LOGTAPE_TEST_LOWEST_LEVEL = "debug"
+}
+pnpm run --parallel --recursive test
+'''
 
 [tasks.bump]
 description = "Bump all package versions"
@@ -93,4 +106,12 @@ pnpm exec drizzle-kit generate ...$name ...$custom
 
 [tasks.dev]
 description = "Run the development server"
+usage = '''
+flag "-L --log-level <level>" {
+  choices "trace" "debug" "info" "warn" "error" "fatal"
+  default "debug"
+  help "Set log level"
+}
+flag "--log-output <path>" help="Write logs to a file"
+'''
 run = "node scripts/dev.mts"

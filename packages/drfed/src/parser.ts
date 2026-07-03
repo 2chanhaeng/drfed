@@ -14,12 +14,14 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import { relations, schema } from "@drfed/models";
+import { getLogger } from "@logtape/drizzle-orm";
 import { merge, object, or } from "@optique/core/constructs";
 import { message, optionNames } from "@optique/core/message";
 import { map, withDefault } from "@optique/core/modifiers";
 import type { InferValue } from "@optique/core/parser";
 import { option } from "@optique/core/primitives";
 import { socketAddress, url } from "@optique/core/valueparser";
+import { loggingOptions } from "@optique/logtape";
 import { path } from "@optique/run/valueparser";
 import { drizzle as drizzlePostgres } from "drizzle-orm/node-postgres";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
@@ -43,6 +45,7 @@ const pgliteParser = map(
       connection: { dataDir: dbPath },
       relations,
       schema,
+      logger: getLogger(),
     }),
   }),
 );
@@ -67,11 +70,13 @@ const postgresParser = map(
       },
       relations,
       schema,
+      logger: getLogger(),
     }),
   }),
 );
 
 export const parser = object({
+  logging: loggingOptions({ level: "option", short: "-L" }),
   address: withDefault(
     option("--listen", "-l", socketAddress({ requirePort: true }), {
       description: message`The address to listen on.`,

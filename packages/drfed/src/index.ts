@@ -13,10 +13,13 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+import { AsyncLocalStorage } from "node:async_hooks";
 import process from "node:process";
 
 import { createYogaServer } from "@drfed/graphql";
 import { migrate } from "@drfed/models";
+import { configure, getConsoleSink } from "@logtape/logtape";
+import { createLoggingConfig } from "@optique/logtape";
 import { run } from "@optique/run";
 import { serve } from "srvx";
 
@@ -25,6 +28,7 @@ import metadata from "../package.json" with { type: "json" };
 import type { Options } from "./parser.ts";
 import program from "./program.ts";
 
+// oxlint-disable-next-line max-lines-per-function
 export async function main(): Promise<void> {
   const options: Options = run(program, {
     help: "option",
@@ -35,6 +39,33 @@ export async function main(): Promise<void> {
       value: metadata.version,
     },
   });
+  const loggingConfig = await createLoggingConfig(
+    options.logging,
+    {},
+    {
+      contextLocalStorage: new AsyncLocalStorage(),
+      sinks: {
+        stderr: getConsoleSink({
+          levelMap: {
+            trace: "error",
+            debug: "error",
+            info: "error",
+            warning: "error",
+            error: "error",
+            fatal: "error",
+          },
+        }),
+      },
+      loggers: [
+        {
+          category: ["logtape", "meta"],
+          lowestLevel: "warning",
+          sinks: ["stderr"],
+        },
+      ],
+    },
+  );
+  await configure(loggingConfig);
   if (options.drizzle.migrate) {
     await migrate({ credentials: options.drizzle.credentials });
   }

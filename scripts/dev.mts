@@ -247,15 +247,29 @@ try {
 
   await waitForBuilds(buildExit);
 
+  const serverArgs: string[] = [
+    "--watch",
+    "bin/drfed-server.mjs",
+    "--pglite-data-path",
+    "../../.pgdata",
+    "--listen=0.0.0.0:8888",
+  ];
+
+  const logLevel = process.env.usage_log_level;
+  if (logLevel != null && logLevel !== "") {
+    serverArgs.push("--log-level", logLevel);
+  } else {
+    serverArgs.push("--log-level", "debug");
+  }
+
+  const logOutput = process.env.usage_log_output;
+  if (logOutput != null && logOutput !== "") {
+    serverArgs.push("--log-output", logOutput);
+  }
+
   serverProcess = spawnManaged(
     process.execPath,
-    [
-      "--watch",
-      "bin/drfed-server.mjs",
-      "--pglite-data-path",
-      "../../.pgdata",
-      "--listen=0.0.0.0:8888",
-    ],
+    serverArgs,
     join(root, "packages", "drfed"),
   );
   const serverExit = await waitForExit(serverProcess);

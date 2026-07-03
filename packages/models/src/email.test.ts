@@ -14,9 +14,9 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
 
 import { normalizeEmail } from "@drfed/models/email";
+import { describe, it } from "@logtape/testing-node/autoload";
 
 describe("normalizeEmail()", () => {
   it("with valid email", () => {

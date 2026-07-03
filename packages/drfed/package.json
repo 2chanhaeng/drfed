@@ -59,6 +59,7 @@
     "build": "tsdown"
   },
   "devDependencies": {
+    "@logtape/testing-node": "catalog:",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "tsdown": "catalog:",
@@ -68,7 +69,10 @@
     "@drfed/graphql": "workspace:*",
     "@drfed/models": "workspace:*",
     "@electric-sql/pglite": "catalog:",
+    "@logtape/drizzle-orm": "catalog:",
+    "@logtape/logtape": "catalog:",
     "@optique/core": "^1.1.0",
+    "@optique/logtape": "catalog:",
     "@optique/run": "^1.1.0",
     "drizzle-orm": "catalog:",
     "pg": "catalog:",

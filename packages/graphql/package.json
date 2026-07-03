@@ -86,12 +86,15 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "catalog:",
+    "@logtape/testing-node": "catalog:",
     "@types/node": "catalog:",
     "tsdown": "catalog:",
     "typescript": "catalog:"
   },
   "dependencies": {
     "@drfed/models": "workspace:*",
+    "@logtape/graphql-yoga": "catalog:",
+    "@logtape/logtape": "catalog:",
     "@pothos/core": "^4.13.0",
     "@pothos/plugin-drizzle": "^0.17.4",
     "@pothos/plugin-relay": "^4.7.0",
