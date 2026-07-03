@@ -14,6 +14,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import type { Database } from "@drfed/models";
+import { getYogaLogger } from "@logtape/graphql-yoga";
 import {
   type YogaServerInstance,
   createYoga,
@@ -39,5 +40,6 @@ export function createYogaServer(
     },
     plugins: [useExecutionCancellation()],
     schema,
+    logging: getYogaLogger(),
   });
 }

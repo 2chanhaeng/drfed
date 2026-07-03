@@ -93,4 +93,12 @@ pnpm exec drizzle-kit generate ...$name ...$custom
 
 [tasks.dev]
 description = "Run the development server"
+usage = '''
+flag "-L --log-level <level>" {
+  choices "trace" "debug" "info" "warn" "error" "fatal"
+  default "debug"
+  help "Set log level"
+}
+flag "--log-output <path>" help="Write logs to a file"
+'''
 run = "node scripts/dev.mts"

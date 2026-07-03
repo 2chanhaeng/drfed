@@ -99,6 +99,7 @@
   },
   "dependencies": {
     "@electric-sql/pglite": "catalog:",
+    "@logtape/logtape": "catalog:",
     "drizzle-orm": "catalog:",
     "pg": "catalog:"
   }

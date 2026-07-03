@@ -6,9 +6,16 @@ allowBuilds:
 
 catalog:
   "@electric-sql/pglite": ^0.5.3
+  "@logtape/drizzle-orm": ^2.2.2
+  "@logtape/graphql-yoga": 2.3.0-dev.791
+  "@logtape/logtape": ^2.2.2
+  "@optique/logtape": ^1.1.1
   "@types/node": ^26.0.0
   "@types/pg": ^8.20.0
   drizzle-orm: 1.0.0-beta.22
   pg: ^8.21.0
   tsdown: ^0.22.3
   typescript: ^6.0.3
+
+minimumReleaseAgeExclude:
+  - "@logtape/graphql-yoga@2.3.0-dev.791"
