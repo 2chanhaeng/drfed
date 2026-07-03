@@ -53,9 +53,6 @@
     "solid-js": "^1.9.5",
     "vite": "^7.0.0"
   },
-  "engines": {
-    "node": ">=22"
-  },
   "devDependencies": {
     "eslint-plugin-solid": "^0.14.5"
   }
