@@ -17,6 +17,11 @@ auto = true
 [hooks]
 postinstall = ["mise deps", "mise generate git-pre-commit --task check --write"]
 
+[tasks."build:web"]
+description = "Build SolidStart frontend server"
+dir = "./packages/web"
+run = "pnpm run build"
+
 [tasks.check]
 description = "Check all"
 depends = ["check:*"]
