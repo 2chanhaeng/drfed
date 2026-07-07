@@ -25,8 +25,6 @@ Building
 mise run build:web
 ~~~~
 
-
 This project was created with the [Solid CLI]
----------------------------------------------
 
 [Solid CLI]: https://github.com/solidjs-community/solid-cli
