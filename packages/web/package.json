@@ -1,7 +1,7 @@
 {
   "name": "@drfed/web",
   "version": "0.1.0",
-  "description": "A SolidStart Frontend for DrFed.",
+  "description": "A SolidStart frontend for DrFed.",
   "keywords": [
     "ActivityPub",
     "fediverse",
