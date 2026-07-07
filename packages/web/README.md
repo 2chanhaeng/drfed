@@ -14,7 +14,7 @@ Usage
 mise run dev:web
 
 # or start the server and open the app in a new browser tab
-mise run dev:web -- --open
+mise run dev:web --open
 ~~~~
 
 
