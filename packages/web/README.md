@@ -1,7 +1,7 @@
 @drfed/web
 ==========
 
-Frontend Web App for [DrFed], built with [SolidStart];
+Web frontend app for [DrFed], built with [SolidStart];
 
 [DrFed]: https://drfed.org/
 [SolidStart]: https://start.solidjs.com
