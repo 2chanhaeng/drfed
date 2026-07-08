@@ -1,3 +1,9 @@
 no_inherit = true
 include = ["*.md", "**/*.md"]
-exclude = ["AGENTS.md", "CLAUDE.md", "node_modules/"]
+exclude = [
+  ".agents/skills/",
+  ".claude/skills/",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "node_modules/",
+]
