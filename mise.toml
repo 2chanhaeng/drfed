@@ -46,6 +46,13 @@ run = "hongdown --check"
 description = "Check mise.toml formatting"
 run = "mise fmt --check"
 
+[tasks."check:license"]
+description = "Check the license comments of files in the whole codebase."
+run = """
+#!/usr/bin/env nu
+node scripts/add-license/main.mts --check
+"""
+
 [tasks."check:versions"]
 description = "Check that all package versions are in sync"
 run = "node scripts/check-versions.mts"
@@ -62,6 +69,13 @@ run = "hongdown --write"
 [tasks."fmt:mise"]
 description = "Format mise.toml"
 run = "mise fmt"
+
+[tasks."fmt:license"]
+description = "Add license comments to the files that don't have them."
+run = """
+#!/usr/bin/env nu
+node scripts/add-license/main.mts
+"""
 
 [tasks.build]
 description = "Build the project"
