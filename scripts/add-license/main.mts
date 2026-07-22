@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 // oxlint-disable no-console no-magic-numbers
 import { glob, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, join, relative } from "node:path";
@@ -22,7 +23,7 @@ import { fileURLToPath } from "node:url";
 import GPL from "./gpl.mts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const INCLUDED = ["scripts/", "packages/*/src/"];
+const INCLUDED = ["scripts/", "packages/*/src/", "packages/*/bin/"];
 const EXCLUDED = ["**/dist/"];
 
 type Extension = keyof typeof GPL;
@@ -33,7 +34,7 @@ interface AddLicenseProps {
 
 interface LicenseTarget {
   readonly path: string;
-  readonly extension: Extension;
+  readonly ext: Extension;
 }
 
 interface LicenseCheck extends LicenseTarget {
@@ -41,63 +42,50 @@ interface LicenseCheck extends LicenseTarget {
 }
 
 export default async function addLicense(opt: AddLicenseProps) {
-  const files = await findIncludedFiles();
-  const targets = files
-    .map((path) => ({ path, extension: extensionOf(path) }))
-    .filter(isLicenseTarget);
-  const checks = await Promise.all(targets.map(checkLicense));
-  const missing = checks.filter((check) => !check.hasLicense);
-
-  if (missing.length === 0) {
+  const files = await findTargets().then(filterLicense);
+  if (files.length === 0) {
     process.exit(0);
   }
-
   if (opt.check) {
-    for (const file of missing) {
-      console.log(relative(ROOT, file.path));
-    }
+    console.warn("Licenses are missing from some files:");
+    listFiles(files);
     process.exit(1);
   }
+  console.warn("Added licenses to the files that were missing them:");
+  listFiles(files);
 
-  await Promise.all(missing.map((file) => addLicenseHeader(file)));
+  await Promise.all(files.map(addLicenseHeader));
 }
 
-async function findIncludedFiles(): Promise<string[]> {
-  const patterns = INCLUDED.map((dir) => `${dir}**/*`);
-  const files: string[] = [];
-  for await (const entry of glob(patterns, {
-    cwd: ROOT,
-    exclude: EXCLUDED,
-    withFileTypes: true,
-  })) {
-    if (entry.isFile()) {
-      files.push(join(entry.parentPath, entry.name));
-    }
-  }
-  return files;
-}
+const findTargets = async (): Promise<LicenseTarget[]> =>
+  (await Array.fromAsync(glob(INCLUDED.map(addAsteriskIfDir), GLOB_OPTION)))
+    .filter((entry) => entry.isFile())
+    .map((entry) => join(entry.parentPath, entry.name))
+    .map((path) => ({ path, ext: extensionOf(path) }))
+    .filter(isLicenseTarget);
 
-function extensionOf(path: string): string {
-  return extname(path).slice(1);
-}
+const GLOB_OPTION = {
+  cwd: ROOT,
+  exclude: EXCLUDED,
+  withFileTypes: true,
+} as const;
 
-function isLicenseTarget(
-  file: Readonly<{ path: string; extension: string }>,
-): file is LicenseTarget {
-  return Object.hasOwn(GPL, file.extension);
-}
+const addAsteriskIfDir = (dir: string) =>
+  dir.endsWith("/") ? `${dir}**/*` : dir;
 
-async function readLines(path: string): Promise<string[]> {
-  const content = await readFile(path, { encoding: "utf-8" });
-  return content.split("\n");
-}
+const filterLicense = async (files: LicenseTarget[]): Promise<LicenseCheck[]> =>
+  (await Array.fromAsync(files, checkLicense)).filter(
+    (check) => !check.hasLicense,
+  );
 
-function shebangOffset(lines: readonly string[]): number {
-  return lines[0]?.startsWith("#!") ? 1 : 0;
-}
+const extensionOf = (path: string): string => extname(path).slice(1);
+
+const isLicenseTarget = (
+  file: Readonly<{ path: string; ext: string }>,
+): file is LicenseTarget => Object.hasOwn(GPL, file.ext);
 
 async function checkLicense(target: LicenseTarget): Promise<LicenseCheck> {
-  const header = GPL[target.extension];
+  const header = GPL[target.ext];
   const lines = await readLines(target.path);
   const offset = shebangOffset(lines);
   const headerLineCount = header.split("\n").length;
@@ -106,15 +94,34 @@ async function checkLicense(target: LicenseTarget): Promise<LicenseCheck> {
 }
 
 async function addLicenseHeader(target: LicenseTarget): Promise<void> {
-  const header = GPL[target.extension];
-  const lines = await readLines(target.path);
+  const added = updateLines(GPL[target.ext], await readLines(target.path));
+  await writeFile(target.path, added, { encoding: "utf-8" });
+}
+
+const readLines = async (path: string): Promise<string[]> =>
+  (await readFile(path, { encoding: "utf-8" })).split("\n");
+
+const shebangOffset = (lines: readonly string[]): number =>
+  lines[0]?.startsWith("#!") ? (lines[1]?.trim() === "" ? 2 : 1) : 0;
+
+const updateLines = (header: string, lines: string[]): string =>
+  Array.from(genLines(header, lines)).join("\n");
+
+function* genLines(header: string, lines: string[]): Generator<string> {
   const offset = shebangOffset(lines);
-  const updatedLines = [
-    ...lines.slice(0, offset),
-    ...header.split("\n"),
-    ...lines.slice(offset),
-  ];
-  await writeFile(target.path, updatedLines.join("\n"), { encoding: "utf-8" });
+  yield* lines.slice(0, offset);
+  yield header;
+  const next = lines.at(offset);
+  if (next != null && next.trim() !== "") {
+    yield "";
+  }
+  yield* lines.slice(offset);
+}
+
+function listFiles(files: LicenseTarget[]) {
+  for (const file of files) {
+    console.warn(`  - ${relative(ROOT, file.path)}`);
+  }
 }
 
 if (import.meta.main) {

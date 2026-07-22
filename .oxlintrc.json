@@ -29,6 +29,7 @@
     "eslint/no-eq-null": "off",
     "eslint/no-magic-numbers": "warn",
     "eslint/no-ternary": "off",
+    "eslint/no-nested-ternary": "off",
     "eslint/no-undefined": "off",
     "eslint/no-void": "off",
     "eslint/no-warning-comments": ["warn", { "terms": ["TODO"] }],
