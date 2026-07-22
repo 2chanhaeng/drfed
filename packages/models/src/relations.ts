@@ -17,6 +17,7 @@ import { defineRelations } from "drizzle-orm";
 
 import * as schema from "./schema.ts";
 
+// oxlint-disable-next-line eslint/max-lines-per-function
 export const relations = defineRelations(schema, (r) => ({
   accounts: {
     instances: r.many.instances({
@@ -34,6 +35,14 @@ export const relations = defineRelations(schema, (r) => ({
       where: {
         accepted: { isNotNull: true },
       },
+    }),
+    sessions: r.many.sessions({
+      from: r.accounts.id,
+      to: r.sessions.accountId,
+    }),
+    loginTokens: r.many.loginTokens({
+      from: r.accounts.id,
+      to: r.loginTokens.accountId,
     }),
   },
   instanceMembers: {
@@ -62,6 +71,20 @@ export const relations = defineRelations(schema, (r) => ({
       where: {
         accepted: { isNotNull: true },
       },
+    }),
+  },
+  sessions: {
+    account: r.one.accounts({
+      from: r.sessions.accountId,
+      to: r.accounts.id,
+      optional: false,
+    }),
+  },
+  loginTokens: {
+    account: r.one.accounts({
+      from: r.loginTokens.accountId,
+      to: r.accounts.id,
+      optional: false,
     }),
   },
 }));

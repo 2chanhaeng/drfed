@@ -109,3 +109,49 @@ export const instanceMembers = pgTable(
 
 export type InstanceMember = typeof instanceMembers.$inferSelect;
 export type NewInstanceMember = typeof instanceMembers.$inferInsert;
+
+/**
+ * Tokens for email login. `tokenHash` and `codeHash` store SHA-256 hex digests,
+ * not the raw secrets.  The `tokenHash` field is used for lookup and
+ * the `codeHash` field is the hash of the raw code that is sent to the user's
+ * email.
+ */
+export const loginTokens = pgTable("login_tokens", {
+  id: uuid().primaryKey(),
+  accountId: uuid()
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  tokenHash: varchar({ length: 64 }).notNull().unique(),
+  codeHash: varchar({ length: 64 }).notNull(),
+  created: timestamp({ withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  expires: timestamp({ withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP + INTERVAL '15 minutes'`),
+  consumed: timestamp({ withTimezone: true }),
+});
+
+export type LoginToken = typeof loginTokens.$inferSelect;
+export type NewLoginToken = typeof loginTokens.$inferInsert;
+
+/**
+ * Authenticated sessions. The `id` field is used to revoke a session, and
+ * the `tokenHash` is the hash of the bearer access token.
+ */
+export const sessions = pgTable("sessions", {
+  id: uuid().primaryKey(),
+  accountId: uuid()
+    .notNull()
+    .references(() => accounts.id, { onDelete: "cascade" }),
+  tokenHash: varchar({ length: 64 }).notNull().unique(),
+  created: timestamp({ withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP`),
+  expires: timestamp({ withTimezone: true })
+    .notNull()
+    .default(sql`CURRENT_TIMESTAMP + INTERVAL '1 month'`),
+});
+
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;

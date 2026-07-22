@@ -13,7 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
-// oxlint-disable no-console no-magic-numbers eslin/max-lines
+// oxlint-disable no-console no-magic-numbers eslin/max-lines node/no-top-level-await
 import { type ChildProcess, spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { readFile, readdir, rm } from "node:fs/promises";
@@ -305,6 +305,7 @@ try {
     "--pglite-data-path",
     "../../.pgdata",
     "--listen=0.0.0.0:8888",
+    "--log-format=color",
   ];
 
   const logLevel = process.env.usage_log_level;
@@ -317,6 +318,11 @@ try {
   const logOutput = process.env.usage_log_output;
   if (logOutput != null && logOutput !== "") {
     serverArgs.push("--log-output", logOutput);
+  }
+
+  const seed = process.env.usage_no_seed !== "true";
+  if (seed) {
+    serverArgs.push("--dev-seed");
   }
 
   serverProcess = spawnManaged(

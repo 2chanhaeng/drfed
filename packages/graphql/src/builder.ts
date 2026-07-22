@@ -13,10 +13,15 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import { type Database, normalizeEmail, relations } from "@drfed/models";
+import type { Account, Session } from "@drfed/models/schema";
+import { Template } from "@fedify/uri-template";
 import SchemaBuilder, { type ObjectRef } from "@pothos/core";
 import DrizzlePlugin from "@pothos/plugin-drizzle";
+import ErrorsPlugin from "@pothos/plugin-errors";
 import RelayPlugin from "@pothos/plugin-relay";
+import type { Transport } from "@upyo/core";
 import { getTableConfig } from "drizzle-orm/pg-core";
 import { DateTimeResolver, UUIDResolver } from "graphql-scalars";
 
@@ -35,13 +40,38 @@ export interface ServerContext {
    * The database instance.
    */
   readonly db: Database;
+
+  /**
+   * Email sending services.
+   */
+  readonly mailer: Transport;
+
+  /**
+   * Email address to send.
+   */
+  readonly emailFrom: string;
+
+  /**
+   * Origin list.
+   */
+  readonly origins: ReadonlySet<string>;
 }
 
 /**
  * The user-related context data for the GraphQL server, which include every
  * field from the {@link ServerContext}.
  */
-export interface UserContext extends ServerContext {}
+export interface UserContext extends ServerContext {
+  /**
+   * Session information.
+   */
+  readonly session?: Session;
+
+  /**
+   * Current viewer.
+   */
+  readonly account?: Account;
+}
 
 export interface SchemaTypes {
   Context: UserContext;
@@ -57,6 +87,10 @@ export interface SchemaTypes {
     UUID: {
       Input: string;
       Output: string;
+    };
+    URITemplate: {
+      Input: Template;
+      Output: Template;
     };
   };
   DefaultFieldNullability: false;
@@ -84,7 +118,8 @@ export const builder = new SchemaBuilder<SchemaTypes>({
     getTableConfig,
     relations,
   },
-  plugins: [DrizzlePlugin, RelayPlugin],
+  plugins: [DrizzlePlugin, RelayPlugin, ErrorsPlugin],
+  errors: { defaultTypes: [] },
 });
 
 builder.addScalarType("DateTime", DateTimeResolver);
@@ -95,6 +130,18 @@ builder.scalarType("Email", {
 });
 
 builder.addScalarType("UUID", UUIDResolver);
+
+builder.scalarType("URITemplate", {
+  parseValue(v) {
+    if (v instanceof Template) {
+      return v;
+    }
+    return Template.parse(String(v));
+  },
+  serialize(v) {
+    return v.toString();
+  },
+});
 
 export const Node = builder.nodeInterfaceRef();
 

@@ -108,6 +108,7 @@ let name = (if "usage_name" in $env { ["--name" $env.usage_name] } else { [] })
 let custom = (if "usage_custom" in $env { ["--custom"] } else { [] })
 pnpm exec drizzle-kit generate ...$name ...$custom
 """
+depends_post = ["fmt"]
 
 [tasks.dev]
 description = "Run the development server"
@@ -118,6 +119,7 @@ flag "-L --log-level <level>" {
   help "Set log level"
 }
 flag "--log-output <path>" help="Write logs to a file"
+flag "-S --no-seed" help="Skip database seeding"
 '''
 run = "node scripts/dev.mts"
 

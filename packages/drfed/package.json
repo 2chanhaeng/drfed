@@ -71,9 +71,11 @@
     "@electric-sql/pglite": "catalog:",
     "@logtape/drizzle-orm": "catalog:",
     "@logtape/logtape": "catalog:",
-    "@optique/core": "^1.1.0",
+    "@optique/core": "catalog:",
     "@optique/logtape": "catalog:",
-    "@optique/run": "^1.1.0",
+    "@optique/run": "catalog:",
+    "@upyo/smtp": "catalog:",
+    "@upyo/logtape": "catalog:",
     "drizzle-orm": "catalog:",
     "pg": "catalog:",
     "srvx": "^0.11.16"

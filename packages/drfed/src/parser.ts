@@ -13,16 +13,20 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import { relations, schema } from "@drfed/models";
+import { PGlite } from "@electric-sql/pglite";
 import { getLogger } from "@logtape/drizzle-orm";
 import { merge, object, or } from "@optique/core/constructs";
 import { message, optionNames } from "@optique/core/message";
-import { map, withDefault } from "@optique/core/modifiers";
+import { map, optional, withDefault } from "@optique/core/modifiers";
 import type { InferValue } from "@optique/core/parser";
 import { option } from "@optique/core/primitives";
 import { socketAddress, url } from "@optique/core/valueparser";
 import { loggingOptions } from "@optique/logtape";
 import { path } from "@optique/run/valueparser";
+import { LogTapeTransport } from "@upyo/logtape";
+import { SmtpTransport } from "@upyo/smtp";
 import { drizzle as drizzlePostgres } from "drizzle-orm/node-postgres";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 
@@ -36,18 +40,21 @@ const pgliteParser = map(
       description: message`The path to the directory where the PGlite database files will be stored.  Mutually exclusive with ${optionNames(["--postgres-url", "--database-url", "-D"])}.`,
     },
   ),
-  (dbPath) => ({
-    credentials: {
-      driver: "pglite" as const,
-      url: dbPath,
-    },
-    db: drizzlePglite({
-      connection: { dataDir: dbPath },
-      relations,
-      schema,
-      logger: getLogger(),
-    }),
-  }),
+  (dbPath) => {
+    const client = new PGlite(dbPath);
+    return {
+      credentials: {
+        driver: "pglite" as const,
+        client,
+      },
+      db: drizzlePglite({
+        client,
+        relations,
+        schema,
+        logger: getLogger(),
+      }),
+    };
+  },
 );
 
 const postgresParser = map(
@@ -75,8 +82,35 @@ const postgresParser = map(
   }),
 );
 
+const smtpParser = map(
+  optional(
+    option("--smtp-url", "-s", url({ allowedProtocols: ["smtp:"] }), {
+      description: message`The URL of the SMTP server to deliver emails through.`,
+    }),
+  ),
+  (smtpUrl: URL | undefined) =>
+    smtpUrl == null
+      ? new LogTapeTransport({ recordMessage: "inline" })
+      : new SmtpTransport({
+          host: smtpUrl.hostname,
+          port: smtpUrl.port === "" ? SMTP_DEFAULT_PORT : Number(smtpUrl.port),
+          // SMTPS for later
+          secure: false,
+        }),
+);
+const SMTP_DEFAULT_PORT = 25;
+
+const seedParser = option("--dev-seed", {
+  description: message`Seeding initial data for dev or test.`,
+  hidden: true,
+});
+
 export const parser = object({
-  logging: loggingOptions({ level: "option", short: "-L" }),
+  logging: loggingOptions({
+    level: "option",
+    short: "-L",
+    formatter: "--log-format",
+  }),
   address: withDefault(
     option("--listen", "-l", socketAddress({ requirePort: true }), {
       description: message`The address to listen on.`,
@@ -97,6 +131,8 @@ export const parser = object({
       ),
     }),
   ),
+  mailer: smtpParser,
+  seed: seedParser,
 });
 
 export type Options = InferValue<typeof parser>;
