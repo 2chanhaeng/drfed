@@ -47,6 +47,11 @@ export interface YogaServerOptions {
    * Origin list.
    */
   origins?: ReadonlySet<string>;
+
+  /**
+   * Root domain.
+   */
+  root?: string | undefined;
 }
 
 /**
@@ -98,6 +103,7 @@ const fillOptions = (opt: YogaServerOptions): Required<YogaServerOptions> => ({
   emailFrom: opt?.emailFrom ?? "noreply@drfed.org",
   // FIXME: Properly parametrize the following allowlist:
   origins: opt?.origins ?? new Set(["https://drfed.org"]),
+  root: opt?.root ?? "drfed.org",
 });
 
 const getAccessToken = (headers: Headers) =>
