@@ -8,6 +8,12 @@
           "fmt.configPath": null
         }
       }
+    },
+    "oxlint": {
+      "binary": {
+        "path": "mise",
+        "arguments": ["exec", "--", "oxlint", "--lsp"]
+      }
     }
   },
   "languages": {
