@@ -57,7 +57,7 @@ const signInAction = action(async (formData: FormData) => {
   }
 
   const environment = createRelayEnvironment();
-  const verifyUrl = new URL("/confirm/{token}?code={code}", request.url).href;
+  const verifyUrl = `${new URL(request.url).origin}/confirm/{token}?code={code}`;
 
   const result = await new Promise<SignInResult>((resolve) => {
     commitMutation(environment, {
