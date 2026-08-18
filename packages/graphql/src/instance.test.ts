@@ -172,7 +172,6 @@ describe("Mutation.createInstance", () => {
       const instances = await db.select().from(schema.instances);
       assert.equal(instances.length, 1);
       const instance = instances[0]!;
-      assert.equal(instance.location, "Local");
       const local = await db.query.localInstances.findFirst({
         where: { id: instance.id },
       });
@@ -287,12 +286,11 @@ describe("Remote instance", () => {
       await seedRemoteInstance(db);
       await db.insert(schema.instances).values({
         id: duplicateRemoteInstanceId,
-        location: "Remote",
-        created,
+        host: "example.com",
       });
 
       await assert.rejects(
-        db.insert(schema.remoteInstances).values({
+        db.insert(schema.instances).values({
           id: duplicateRemoteInstanceId,
           host: "remote.example.com",
         }),
@@ -371,15 +369,15 @@ async function seedInstanceMembers(db: Database): Promise<void> {
       created,
     },
   ]);
-  await db.insert(schema.instances).values({
-    id: instanceId,
-    location: "Local",
-    created,
-  });
   await db.insert(schema.localInstances).values({
     id: instanceId,
     slug: "test-instance",
     expires,
+  });
+  await db.insert(schema.instances).values({
+    id: instanceId,
+    created,
+    host: "test-instance.drfed.org",
   });
   await db.insert(schema.instanceMembers).values([
     {
@@ -415,12 +413,8 @@ async function seedRemoteInstance(db: Database): Promise<void> {
   });
   await db.insert(schema.instances).values({
     id: instanceId,
-    location: "Remote",
     created,
-  });
-  await db.insert(schema.remoteInstances).values({
-    id: instanceId,
-    host: "remote.example.com",
+    host: `example.com`,
   });
   await db.insert(schema.instanceMembers).values({
     accountId,

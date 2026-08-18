@@ -187,12 +187,12 @@ async function seedLocalInstances(db: Database): Promise<void> {
   await db.insert(schema.instances).values([
     {
       id: acceptedInstanceId,
-      location: "Local",
+      host: "temp1.drfed.org",
       created,
     },
     {
       id: pendingInstanceId,
-      location: "Local",
+      host: "temp2.drfed.org",
       created,
     },
   ]);
