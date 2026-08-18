@@ -52,7 +52,6 @@ const accountInstancesQuery = `
           admin
           node {
             uuid
-            location
             host
           }
         }
@@ -83,7 +82,6 @@ const accountInstancesResponse = {
             admin: true,
             node: {
               uuid: acceptedInstanceId,
-              location: "Local",
               host: "test-instance.drfed.org",
             },
           },
@@ -184,18 +182,6 @@ async function seedMembershipGraph(db: Database): Promise<void> {
 }
 
 async function seedLocalInstances(db: Database): Promise<void> {
-  await db.insert(schema.instances).values([
-    {
-      id: acceptedInstanceId,
-      host: "temp1.drfed.org",
-      created,
-    },
-    {
-      id: pendingInstanceId,
-      host: "temp2.drfed.org",
-      created,
-    },
-  ]);
   await db.insert(schema.localInstances).values([
     {
       id: acceptedInstanceId,
@@ -206,6 +192,20 @@ async function seedLocalInstances(db: Database): Promise<void> {
       id: pendingInstanceId,
       slug: "pending-instance",
       expires,
+    },
+  ]);
+  await db.insert(schema.instances).values([
+    {
+      id: acceptedInstanceId,
+      localId: acceptedInstanceId,
+      host: "test-instance.drfed.org",
+      created,
+    },
+    {
+      id: pendingInstanceId,
+      localId: pendingInstanceId,
+      host: "pending-instance.drfed.org",
+      created,
     },
   ]);
 }

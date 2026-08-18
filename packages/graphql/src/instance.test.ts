@@ -43,7 +43,6 @@ const remoteInstanceQuery = `
         edges {
           node {
             uuid
-            location
             host
           }
         }
@@ -140,7 +139,6 @@ const createInstanceMutation = `
       __typename
       ... on Instance {
         uuid
-        location
         host
       }
       ... on CreateInstanceError {
@@ -165,15 +163,15 @@ describe("Mutation.createInstance", () => {
       const body = await response.json();
       assert.equal(body.errors, undefined);
       assert.equal(body.data.createInstance.__typename, "Instance");
-      assert.equal(body.data.createInstance.location, "Local");
       assert.equal(body.data.createInstance.host, "my-instance.drfed.org");
       assert.equal(typeof body.data.createInstance.uuid, "string");
 
       const instances = await db.select().from(schema.instances);
       assert.equal(instances.length, 1);
       const instance = instances[0]!;
+      assert.equal(typeof instance.localId, "string");
       const local = await db.query.localInstances.findFirst({
-        where: { id: instance.id },
+        where: { id: instance.localId! },
       });
       assert.equal(local?.slug, "my-instance");
 
@@ -269,7 +267,6 @@ describe("Remote instance", () => {
                 {
                   node: {
                     uuid: instanceId,
-                    location: "Remote",
                     host: "remote.example.com",
                   },
                 },
@@ -284,10 +281,6 @@ describe("Remote instance", () => {
   it("requires a unique host", async () => {
     await withTestHarness(async ({ db }) => {
       await seedRemoteInstance(db);
-      await db.insert(schema.instances).values({
-        id: duplicateRemoteInstanceId,
-        host: "example.com",
-      });
 
       await assert.rejects(
         db.insert(schema.instances).values({
@@ -298,7 +291,7 @@ describe("Remote instance", () => {
           error instanceof DrizzleQueryError &&
           error.cause != null &&
           "constraint" in error.cause &&
-          error.cause.constraint === "remote_instances_host_key",
+          error.cause.constraint === "instances_host_key",
       );
     });
   });
@@ -376,6 +369,7 @@ async function seedInstanceMembers(db: Database): Promise<void> {
   });
   await db.insert(schema.instances).values({
     id: instanceId,
+    localId: instanceId,
     created,
     host: "test-instance.drfed.org",
   });
@@ -414,7 +408,7 @@ async function seedRemoteInstance(db: Database): Promise<void> {
   await db.insert(schema.instances).values({
     id: instanceId,
     created,
-    host: `example.com`,
+    host: "remote.example.com",
   });
   await db.insert(schema.instanceMembers).values({
     accountId,

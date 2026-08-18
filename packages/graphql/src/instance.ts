@@ -261,7 +261,7 @@ builder.mutationFields((t) => ({
           const host = `${slug}.${ctx.root}`;
           const [instance] = await tx
             .insert(schema.instances)
-            .values({ id: uuid(), host })
+            .values({ id: uuid(), localId: local.id, host })
             .returning();
           if (instance == null) throw new Error("Failed to create instance.");
           await tx.insert(schema.instanceMembers).values({
