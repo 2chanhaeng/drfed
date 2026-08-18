@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// oxlint-disable max-lines-per-function
 import { schema } from "@drfed/models";
 import { instanceMembers } from "@drfed/models/schema";
 import { drizzleConnectionHelpers } from "@pothos/plugin-drizzle";
@@ -38,21 +37,50 @@ const InstanceRef = builder.drizzleNode("instances", {
   fields: (t) => ({
     uuid: t.expose("id", {
       type: "UUID",
-      description: "The UUID of the `Instance`.",
     }),
-    slug: t.exposeString("slug"),
-    expires: t.expose("expires", {
-      type: "DateTime",
-      description: "The expiration date/time of the `Instance`.",
-    }),
+    host: t.exposeString("host"),
     created: t.expose("created", {
       type: "DateTime",
       description: "The creation date/time of the `Instance`.",
+    }),
+    nodeInfoUrl: t.exposeString("nodeInfoUrl", {
+      nullable: true,
+    }),
+    software: t.exposeString("software", {
+      nullable: true,
+    }),
+    softwareVersion: t.exposeString("softwareVersion", {
+      nullable: true,
     }),
   }),
 });
 
 export const Instance: DrFedObjectRef = InstanceRef;
+
+const LocalInstanceRef = builder.drizzleNode("localInstances", {
+  name: "LocalInstance",
+  description: "Represents an `Instance` in the DrFed platform.",
+  id: {
+    column(instance) {
+      return instance.id;
+    },
+    description: "The unique identifier of the `Instance`.",
+  },
+  fields: (t) => ({
+    uuid: t.expose("id", {
+      type: "UUID",
+      description: "The UUID of the `Instance`.",
+    }),
+    slug: t.exposeString("slug"),
+    expires: t.expose("expires", {
+      type: "DateTime",
+      description: "The expire date of the instance.",
+    }),
+    maxActors: t.exposeInt("maxActors"),
+  }),
+});
+
+export const LocalInstance: DrFedObjectRef = LocalInstanceRef;
 
 const instanceMembersConnection = drizzleConnectionHelpers(
   builder,
@@ -77,7 +105,6 @@ const instanceMembersConnection = drizzleConnectionHelpers(
   },
 );
 
-// oxlint-disable-next-line max-lines-per-function
 builder.drizzleObjectField(InstanceRef, "members", (t) =>
   t.connection(
     {
@@ -218,15 +245,23 @@ builder.mutationFields((t) => ({
       let tooManyInstances = false;
       try {
         return await ctx.db.transaction(async (tx) => {
-          const [instance] = await tx
-            .insert(schema.instances)
+          const [local] = await tx
+            .insert(schema.localInstances)
             .values({
               id: uuid(),
               slug,
               expires: new Date(
-                Temporal.Now.instant().add({ hours: 8750 }).toString(),
+                Temporal.Now.instant().add({ hours: YEAR_BY_HOURS }).toString(),
               ),
             })
+            .returning();
+          if (local == null) {
+            throw new Error("Failed to create local instance.");
+          }
+          const host = `${slug}.${ctx.root}`;
+          const [instance] = await tx
+            .insert(schema.instances)
+            .values({ id: uuid(), localId: local.id, host })
             .returning();
           if (instance == null) throw new Error("Failed to create instance.");
           await tx.insert(schema.instanceMembers).values({
@@ -254,7 +289,7 @@ builder.mutationFields((t) => ({
           e instanceof DrizzleQueryError &&
           e.cause != null &&
           "constraint" in e.cause &&
-          e.cause.constraint === "instances_slug_key"
+          e.cause.constraint === "local_instances_slug_key"
         ) {
           return {
             message: `The slug ${JSON.stringify(slug)} is already taken.`,
@@ -266,3 +301,5 @@ builder.mutationFields((t) => ({
     },
   }),
 }));
+
+const YEAR_BY_HOURS = 8760;

@@ -14,11 +14,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-// oxlint-disable max-lines max-lines-per-function no-underscore-dangle
+// oxlint-disable no-underscore-dangle
 import assert from "node:assert/strict";
 
 import { type Database, schema } from "@drfed/models";
 import { describe, it } from "@logtape/testing-node/autoload";
+import { DrizzleQueryError } from "drizzle-orm";
 
 import { withTestHarness } from "./harness.test.ts";
 
@@ -31,8 +32,24 @@ const accountId = "00000000-0000-4000-8000-000000000001";
 const memberId = "00000000-0000-4000-8000-000000000002";
 const pendingMemberId = "00000000-0000-4000-8000-000000000003";
 const instanceId = "00000000-0000-4000-8000-000000000101";
+const duplicateRemoteInstanceId = "00000000-0000-4000-8000-000000000102";
 const sessionId = "00000000-0000-4000-8000-000000000201";
 const accessToken = "test-access-token";
+
+const remoteInstanceQuery = `
+  query RemoteInstance($uuid: UUID!) {
+    accountByUuid(uuid: $uuid) {
+      instances {
+        edges {
+          node {
+            uuid
+            host
+          }
+        }
+      }
+    }
+  }
+`;
 
 const instanceMembersQuery = `
   query InstanceMembers($uuid: UUID!) {
@@ -122,7 +139,7 @@ const createInstanceMutation = `
       __typename
       ... on Instance {
         uuid
-        slug
+        host
       }
       ... on CreateInstanceError {
         type
@@ -146,12 +163,17 @@ describe("Mutation.createInstance", () => {
       const body = await response.json();
       assert.equal(body.errors, undefined);
       assert.equal(body.data.createInstance.__typename, "Instance");
-      assert.equal(body.data.createInstance.slug, "my-instance");
+      assert.equal(body.data.createInstance.host, "my-instance.drfed.org");
       assert.equal(typeof body.data.createInstance.uuid, "string");
 
       const instances = await db.select().from(schema.instances);
       assert.equal(instances.length, 1);
-      assert.equal(instances[0]?.slug, "my-instance");
+      const instance = instances[0]!;
+      assert.equal(typeof instance.localId, "string");
+      const local = await db.query.localInstances.findFirst({
+        where: { id: instance.localId! },
+      });
+      assert.equal(local?.slug, "my-instance");
 
       const members = await db.select().from(schema.instanceMembers);
       assert.equal(members.length, 1);
@@ -226,6 +248,55 @@ describe("Mutation.createInstance", () => {
   });
 });
 
+describe("Remote instance", () => {
+  it("returns a created remote instance", async () => {
+    await withTestHarness(async ({ db, post }) => {
+      await seedRemoteInstance(db);
+
+      const response = await post({
+        query: remoteInstanceQuery,
+        variables: { uuid: accountId },
+      });
+
+      assert.equal(response.status, ok);
+      assert.deepEqual(await response.json(), {
+        data: {
+          accountByUuid: {
+            instances: {
+              edges: [
+                {
+                  node: {
+                    uuid: instanceId,
+                    host: "remote.example.com",
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
+    });
+  });
+
+  it("requires a unique host", async () => {
+    await withTestHarness(async ({ db }) => {
+      await seedRemoteInstance(db);
+
+      await assert.rejects(
+        db.insert(schema.instances).values({
+          id: duplicateRemoteInstanceId,
+          host: "remote.example.com",
+        }),
+        (error: unknown) =>
+          error instanceof DrizzleQueryError &&
+          error.cause != null &&
+          "constraint" in error.cause &&
+          error.cause.constraint === "instances_host_key",
+      );
+    });
+  });
+});
+
 /**
  * Seeds an account and an authenticated session, then returns the request
  * options carrying the session's bearer token.
@@ -267,7 +338,6 @@ async function hashSecret(raw: string): Promise<string> {
   ).toHex();
 }
 
-// oxlint-disable-next-line max-lines-per-function
 async function seedInstanceMembers(db: Database): Promise<void> {
   await db.insert(schema.accounts).values([
     {
@@ -292,11 +362,16 @@ async function seedInstanceMembers(db: Database): Promise<void> {
       created,
     },
   ]);
-  await db.insert(schema.instances).values({
+  await db.insert(schema.localInstances).values({
     id: instanceId,
     slug: "test-instance",
-    created,
     expires,
+  });
+  await db.insert(schema.instances).values({
+    id: instanceId,
+    localId: instanceId,
+    created,
+    host: "test-instance.drfed.org",
   });
   await db.insert(schema.instanceMembers).values([
     {
@@ -321,4 +396,24 @@ async function seedInstanceMembers(db: Database): Promise<void> {
       created,
     },
   ]);
+}
+
+async function seedRemoteInstance(db: Database): Promise<void> {
+  await db.insert(schema.accounts).values({
+    id: accountId,
+    email: "owner@example.com",
+    name: "Owner",
+    created,
+  });
+  await db.insert(schema.instances).values({
+    id: instanceId,
+    created,
+    host: "remote.example.com",
+  });
+  await db.insert(schema.instanceMembers).values({
+    accountId,
+    instanceId,
+    accepted,
+    created,
+  });
 }

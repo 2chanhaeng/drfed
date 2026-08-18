@@ -31,7 +31,7 @@ const createInstanceMutation = graphql`
   ) {
     createInstance(slug: $slug) {
       ... on Instance {
-        slug
+        id
       }
     }
   }
@@ -40,7 +40,7 @@ const createInstanceMutation = graphql`
 type CreateInstanceResult =
   | {
       payload: {
-        slug: string;
+        id: string;
       };
       status: "success";
     }
@@ -82,15 +82,15 @@ const createInstanceAction = action(async (formData: FormData) => {
             message: errorMessage,
             status: "error",
           });
-        } else if (response.createInstance.slug === undefined) {
+        } else if (response.createInstance.id === undefined) {
           resolve({
-            message: "Empty Slug Returned",
+            message: "Empty ID Returned",
             status: "error",
           });
         } else {
           resolve({
             payload: {
-              slug: response.createInstance.slug,
+              id: response.createInstance.id,
             },
             status: "success",
           });

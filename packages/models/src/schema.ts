@@ -13,6 +13,7 @@
 //
 // You should have received a copy of the GNU Affero General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 import { sql } from "drizzle-orm";
 import {
   boolean,
@@ -21,10 +22,13 @@ import {
   integer,
   pgTable,
   primaryKey,
+  text,
   timestamp,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
+
+const currentTimestamp = sql`CURRENT_TIMESTAMP`;
 
 /**
  * The database table to represent accounts.
@@ -39,7 +43,7 @@ export const accounts = pgTable(
     admin: boolean().notNull().default(false),
     created: timestamp({ withTimezone: true })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(currentTimestamp),
   },
   (table) => [
     check(
@@ -57,27 +61,39 @@ export type NewAccount = typeof accounts.$inferInsert;
 /**
  * The database table to represent instances.
  */
-export const instances = pgTable(
-  "instances",
-  {
-    id: uuid().primaryKey(),
-    slug: varchar({ length: 100 }).notNull().unique(),
-    expires: timestamp({ withTimezone: true }).notNull(),
-    created: timestamp({ withTimezone: true })
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
-  },
-  (table) => [
-    check("instances_slug_check", sql`${table.slug} ~ '^[a-z0-9-]{4,100}$'`),
-    check(
-      "instances_expires_check",
-      sql`${table.expires} < (${table.created} + INTERVAL '1 year')`,
-    ),
-  ],
-);
+export const instances = pgTable("instances", {
+  id: uuid().primaryKey(),
+  localId: uuid().references(() => localInstances.id, {
+    onDelete: "cascade",
+  }),
+  created: timestamp({ withTimezone: true })
+    .notNull()
+    .default(currentTimestamp),
+  host: varchar({ length: 100 }).notNull().unique(),
+  nodeInfoUrl: text(),
+  software: text(),
+  softwareVersion: text(),
+});
 
 export type Instance = typeof instances.$inferSelect;
 export type NewInstance = typeof instances.$inferInsert;
+
+export const localInstances = pgTable(
+  "local_instances",
+  {
+    id: uuid().primaryKey(),
+    slug: varchar({ length: 63 }).notNull().unique(),
+    expires: timestamp({ withTimezone: true }).notNull(),
+    maxActors: integer().notNull().default(10),
+  },
+  (table) => [
+    check("instances_slug_check", sql`${table.slug} ~ '^[a-z0-9-]{4,63}$'`),
+    check("instances_max_actors_check", sql`${table.maxActors} > 0`),
+  ],
+);
+
+export type LocalInstance = typeof localInstances.$inferSelect;
+export type NewLocalInstance = typeof localInstances.$inferInsert;
 
 /**
  * The association table between instances and its member accounts.
@@ -97,7 +113,7 @@ export const instanceMembers = pgTable(
     accepted: timestamp({ withTimezone: true }),
     created: timestamp({ withTimezone: true })
       .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+      .default(currentTimestamp),
   },
   (table) => [
     primaryKey({ columns: [table.instanceId, table.accountId] }),
@@ -128,7 +144,7 @@ export const loginTokens = pgTable("login_tokens", {
   codeHash: varchar({ length: 64 }).notNull(),
   created: timestamp({ withTimezone: true })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(currentTimestamp),
   expires: timestamp({ withTimezone: true })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP + INTERVAL '15 minutes'`),
@@ -150,7 +166,7 @@ export const sessions = pgTable("sessions", {
   tokenHash: varchar({ length: 64 }).notNull().unique(),
   created: timestamp({ withTimezone: true })
     .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+    .default(currentTimestamp),
   expires: timestamp({ withTimezone: true })
     .notNull()
     .default(sql`CURRENT_TIMESTAMP + INTERVAL '1 month'`),
