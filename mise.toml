@@ -127,6 +127,7 @@ flag "--name <name>" help="Migration file name"
 flag "--custom" help="Prepare empty migration file for custom SQL"
 """
 dir = "packages/models"
+raw = true
 run = """
 #!/usr/bin/env nu
 let name = (if "usage_name" in $env { ["--name" $env.usage_name] } else { [] })

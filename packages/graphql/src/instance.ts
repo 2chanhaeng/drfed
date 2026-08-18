@@ -15,7 +15,7 @@
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import { schema } from "@drfed/models";
-import { instanceMembers, locationEnum } from "@drfed/models/schema";
+import { instanceMembers } from "@drfed/models/schema";
 import { drizzleConnectionHelpers } from "@pothos/plugin-drizzle";
 import { DrizzleQueryError } from "drizzle-orm";
 import { and, eq, isNotNull } from "drizzle-orm/sql/expressions";
@@ -24,10 +24,6 @@ import { v7 as uuid } from "uuid";
 // oxlint-disable-next-line import/no-cycle
 import { Account } from "./account.ts";
 import builder, { type DrFedObjectRef } from "./builder.ts";
-
-const Location = builder.enumType("Location", {
-  values: locationEnum.enumValues,
-});
 
 const InstanceRef = builder.drizzleNode("instances", {
   name: "Instance",
@@ -41,43 +37,50 @@ const InstanceRef = builder.drizzleNode("instances", {
   fields: (t) => ({
     uuid: t.expose("id", {
       type: "UUID",
-      description: "The UUID of the `Instance`.",
     }),
-    location: t.expose("location", {
-      type: Location,
-      description: 'The location of the `Instance`: "Local" | "Remote"',
-    }),
-    host: t.string({
-      async resolve({ id, location }, _, { db, root }) {
-        if (location === "Local") {
-          const ins = await db.query.localInstances.findFirst({
-            columns: { slug: true },
-            where: { id },
-          });
-          if (ins == null) throwUncontested(id);
-          return `${ins.slug}.${root}`;
-        }
-        const ins = await db.query.remoteInstances.findFirst({
-          columns: { host: true },
-          where: { id },
-        });
-        if (ins == null) throwUncontested(id);
-        return ins.host;
-      },
-      description: "The host of the `Instance`.",
-    }),
+    host: t.exposeString("host"),
     created: t.expose("created", {
       type: "DateTime",
       description: "The creation date/time of the `Instance`.",
     }),
+    nodeInfoUrl: t.exposeString("nodeInfoUrl", {
+      nullable: true,
+    }),
+    software: t.exposeString("software", {
+      nullable: true,
+    }),
+    softwareVersion: t.exposeString("softwareVersion", {
+      nullable: true,
+    }),
   }),
 });
 
-function throwUncontested(id: string): never {
-  throw new Error(`DB consistency is broken.: ${id}`);
-}
-
 export const Instance: DrFedObjectRef = InstanceRef;
+
+const LocalInstanceRef = builder.drizzleNode("localInstances", {
+  name: "LocalInstance",
+  description: "Represents an `Instance` in the DrFed platform.",
+  id: {
+    column(instance) {
+      return instance.id;
+    },
+    description: "The unique identifier of the `Instance`.",
+  },
+  fields: (t) => ({
+    uuid: t.expose("id", {
+      type: "UUID",
+      description: "The UUID of the `Instance`.",
+    }),
+    slug: t.exposeString("slug"),
+    expires: t.expose("expires", {
+      type: "DateTime",
+      description: "The expire date of the instance.",
+    }),
+    maxActors: t.exposeInt("maxActors"),
+  }),
+});
+
+export const LocalInstance: DrFedObjectRef = LocalInstanceRef;
 
 const instanceMembersConnection = drizzleConnectionHelpers(
   builder,
@@ -242,10 +245,23 @@ builder.mutationFields((t) => ({
       let tooManyInstances = false;
       try {
         return await ctx.db.transaction(async (tx) => {
-          const id = uuid();
+          const [local] = await tx
+            .insert(schema.localInstances)
+            .values({
+              id: uuid(),
+              slug,
+              expires: new Date(
+                Temporal.Now.instant().add({ hours: YEAR_BY_HOURS }).toString(),
+              ),
+            })
+            .returning();
+          if (local == null) {
+            throw new Error("Failed to create local instance.");
+          }
+          const host = `${slug}.${ctx.root}`;
           const [instance] = await tx
             .insert(schema.instances)
-            .values({ id, location: "Local" })
+            .values({ id: uuid(), host })
             .returning();
           if (instance == null) throw new Error("Failed to create instance.");
           await tx.insert(schema.instanceMembers).values({
@@ -260,13 +276,6 @@ builder.mutationFields((t) => ({
             tooManyInstances = true;
             tx.rollback();
           }
-          await tx.insert(schema.localInstances).values({
-            id,
-            slug,
-            expires: new Date(
-              Temporal.Now.instant().add({ hours: YEAR_BY_HOURS }).toString(),
-            ),
-          });
           return instance;
         });
       } catch (e) {

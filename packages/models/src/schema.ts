@@ -18,15 +18,12 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
-  foreignKey,
   index,
   integer,
-  pgEnum,
   pgTable,
   primaryKey,
   text,
   timestamp,
-  unique,
   uuid,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -61,26 +58,22 @@ export const accounts = pgTable(
 export type Account = typeof accounts.$inferSelect;
 export type NewAccount = typeof accounts.$inferInsert;
 
-export const locationEnum = pgEnum("location", ["Local", "Remote"]);
-export type Location = (typeof locationEnum.enumValues)[number];
-
 /**
  * The database table to represent instances.
  */
-export const instances = pgTable(
-  "instances",
-  {
-    id: uuid().primaryKey(),
-    location: locationEnum().notNull(),
-    created: timestamp({ withTimezone: true })
-      .notNull()
-      .default(currentTimestamp),
-  },
-  (t) => [
-    // This unique constraint prevent simultaneous Local/Remote registration.
-    unique("instances_id_location_key").on(t.id, t.location),
-  ],
-);
+export const instances = pgTable("instances", {
+  id: uuid().primaryKey(),
+  localId: uuid().references(() => localInstances.id, {
+    onDelete: "cascade",
+  }),
+  created: timestamp({ withTimezone: true })
+    .notNull()
+    .default(currentTimestamp),
+  host: varchar({ length: 100 }).notNull().unique(),
+  nodeInfoUrl: text(),
+  software: text(),
+  softwareVersion: text(),
+});
 
 export type Instance = typeof instances.$inferSelect;
 export type NewInstance = typeof instances.$inferInsert;
@@ -88,63 +81,19 @@ export type NewInstance = typeof instances.$inferInsert;
 export const localInstances = pgTable(
   "local_instances",
   {
-    id: uuid()
-      .primaryKey()
-      .references(() => instances.id, { onDelete: "cascade" }),
+    id: uuid().primaryKey(),
     slug: varchar({ length: 63 }).notNull().unique(),
     expires: timestamp({ withTimezone: true }).notNull(),
     maxActors: integer().notNull().default(10),
-    // This `location` column is not an actually used value;
-    // it exists to prevent simultaneous Local/Remote registration,
-    // so it must be fixed as `Local`.
-    location: locationEnum().default("Local").notNull(),
   },
   (table) => [
     check("instances_slug_check", sql`${table.slug} ~ '^[a-z0-9-]{4,63}$'`),
     check("instances_max_actors_check", sql`${table.maxActors} > 0`),
-    // Following `location` check and FK prevent simultaneous Local/Remote
-    // registration.
-    check("local_check", sql`${table.location} = 'Local'`),
-    foreignKey({
-      name: "local_instance_fk",
-      columns: [table.id, table.location],
-      foreignColumns: [instances.id, instances.location],
-    }).onDelete("cascade"),
   ],
 );
 
 export type LocalInstance = typeof localInstances.$inferSelect;
 export type NewLocalInstance = typeof localInstances.$inferInsert;
-
-export const remoteInstances = pgTable(
-  "remote_instances",
-  {
-    id: uuid()
-      .primaryKey()
-      .references(() => instances.id, { onDelete: "cascade" }),
-    host: varchar({ length: 100 }).notNull().unique(),
-    nodeInfoUrl: text(),
-    software: text(),
-    softwareVersion: text(),
-    // This `location` column is not an actually used value;
-    // it exists to prevent simultaneous Local/Remote registration,
-    // so it must be fixed as `Remote`.
-    location: locationEnum().default("Remote").notNull(),
-  },
-  (table) => [
-    // Following `location` check and FK prevent simultaneous Local/Remote
-    // registration.
-    check("remote_check", sql`${table.location} = 'Remote'`),
-    foreignKey({
-      name: "remote_instance_fk",
-      columns: [table.id, table.location],
-      foreignColumns: [instances.id, instances.location],
-    }).onDelete("cascade"),
-  ],
-);
-
-export type RemoteInstance = typeof remoteInstances.$inferSelect;
-export type NewRemoteInstance = typeof remoteInstances.$inferInsert;
 
 /**
  * The association table between instances and its member accounts.
