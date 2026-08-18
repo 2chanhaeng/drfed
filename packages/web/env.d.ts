@@ -1,5 +1,5 @@
 interface ImportMetaEnv {
-  readonly VITE_DRFED_URL: string;
+  VITE_BACKEND_URL: string;
 }
 
 interface ImportMeta {

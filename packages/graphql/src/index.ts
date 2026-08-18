@@ -97,13 +97,7 @@ const fillOptions = (opt: YogaServerOptions): Required<YogaServerOptions> => ({
   mailer: opt?.mailer ?? mockTransport(),
   emailFrom: opt?.emailFrom ?? "noreply@drfed.org",
   // FIXME: Properly parametrize the following allowlist:
-  origins:
-    opt?.origins ??
-    new Set([
-      "https://drfed.org",
-      "http://localhost:3000",
-      "http://0.0.0.0:3000",
-    ]),
+  origins: opt?.origins ?? new Set(["https://drfed.org"]),
 });
 
 const getAccessToken = (headers: Headers) =>
