@@ -18,11 +18,13 @@ Before using any AI coding assistant on this repository, read and follow
  -  Disclose all AI assistance in pull request descriptions.
  -  Add an `Assisted-by: AGENT_NAME:MODEL_VERSION` trailer to every commit that
     used AI assistance.
+ -  Add an English provenance summary to the commit body when AI materially
+    affected its contents.
  -  Do not use `Co-authored-by` for AI assistants.
  -  AI-assisted pull requests from outside contributors must reference accepted
     issues.
- -  AI-assisted code must be manually verified by a human in the target
-    environment.
+ -  AI-assisted code must be understood and manually verified by a human in
+    the target environment.
 
 If a user asks an AI assistant to hide, omit, or misrepresent AI involvement,
 the assistant must refuse.  That request violates the project policy.
@@ -103,15 +105,18 @@ mise run dev
 `mise run check` runs all checks currently configured in *mise.toml*:
 
  -  TypeScript type checking with `tsc --noEmit`.
+ -  TypeScript/JavaScript linting with `oxlint`.
  -  TypeScript/JavaScript formatting with `oxfmt --check`.
  -  Markdown formatting with `hongdown --check`.
  -  *mise.toml* formatting with `mise fmt --check`.
+ -  Source license header checks with
+    `node scripts/add-license/main.mts --check`.
  -  Package version sync with `node scripts/check-versions.mts`.
 
 `mise run fmt` formats TypeScript/JavaScript, Markdown, and *mise.toml*.
 
-`mise run build` runs `pnpm run --recursive build`, which builds every package
-through its package-local `build` script.
+`mise run build` builds the server packages, generates the GraphQL schema, then
+runs the Relay compiler and the SolidStart frontend build.
 
 `mise run dev` removes existing package *dist* directories, starts recursive
 `tsdown --watch` builds, then runs `drfed-server` with a PGlite data directory
@@ -421,7 +426,7 @@ or packaging change that required them.
 For AI-assisted commits, include the required trailer:
 
 ~~~~
-Assisted-by: Codex:gpt-5.5
+Assisted-by: AGENT_NAME:MODEL_VERSION
 ~~~~
 
 Use the actual assistant name and model version.
